@@ -1,0 +1,2907 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <title>毛概完整刷题系统（多选题版）</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+        }
+
+        body {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .stage-bar {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #e3f2fd;
+            border-radius: 4px;
+        }
+
+        .status-bar {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .question-box {
+            margin-bottom: 25px;
+            padding: 20px;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+        }
+
+        .question-type {
+            font-size: 14px;
+            color: #0d6efd;
+            margin-bottom: 8px;
+        }
+
+        .question-content {
+            font-size: 18px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .options {
+            font-size: 16px;
+            margin-bottom: 20px;
+            color: #444;
+        }
+
+        .options span {
+            display: block;
+            margin: 10px 0;
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-radius: 4px;
+            border: 1px solid transparent;
+        }
+
+        .options span:hover {
+            color: #0d6efd;
+            background-color: #f1f7fe;
+            border-color: #cce5ff;
+        }
+
+        /* 多选：支持多个选中状态 */
+        .options span.selected {
+            color: #0d6efd;
+            font-weight: bold;
+            background-color: #e6f7ff;
+            border-left: 4px solid #0d6efd;
+            border-color: #b8daff;
+        }
+
+        /* 正确答案高亮（多选题需高亮所有正确选项） */
+        .options span.correct-answer {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+            font-weight: bold;
+        }
+
+        /* 错误选项高亮（用户选了但不属于正确答案的选项） */
+        .options span.wrong-option {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+            font-weight: bold;
+        }
+
+        .btn-group {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-submit {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .btn-submit:hover {
+            background-color: #218838;
+            transform: translateY(-2px);
+        }
+
+        .btn-unsure {
+            background-color: #ffc107;
+            color: #333;
+        }
+
+        .btn-unsure:hover {
+            background-color: #e0a800;
+            transform: translateY(-2px);
+        }
+
+        .btn-show-answer {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .btn-show-answer:hover {
+            background-color: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        .result {
+            font-size: 17px;
+            font-weight: bold;
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 4px;
+            display: none;
+            border: 1px solid transparent;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* 三种结果的样式区分 */
+        .result.correct {
+            color: #155724;
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .result.half-correct {
+            color: #856404;
+            background-color: #fff3cd;
+            border-color: #ffeeba;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .result.wrong {
+            color: #721c24;
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .answer-explanation {
+            margin: 15px 0;
+            padding: 12px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            border-left: 3px solid #0d6efd;
+            display: none;
+        }
+
+        .answer-explanation.visible {
+            display: block;
+        }
+
+        .page-info {
+            text-align: center;
+            font-size: 16px;
+            color: #666;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px dashed #e9ecef;
+        }
+
+        .finish-tip {
+            text-align: center;
+            font-size: 20px;
+            color: #28a745;
+            margin: 30px 0;
+            padding: 20px;
+            background-color: #d1e7dd;
+            border-radius: 6px;
+            display: none;
+        }
+
+        .control-btn {
+            background-color: #0d6efd;
+            color: white;
+            padding: 8px 16px;
+            margin-left: 10px;
+            cursor: pointer;
+            border-radius: 4px;
+            border: none;
+            transition: all 0.3s;
+        }
+
+        .control-btn:hover {
+            background-color: #0b5ed7;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- 阶段提示 -->
+        <div class="stage-bar" id="stage-bar">
+            刷题阶段：首轮练习（按顺序完成所有题目）
+        </div>
+
+        <!-- 状态栏 -->
+        <div class="status-bar">
+            当前进度：<span id="progress">1/736</span> |
+            题目状态：<span id="q-status">未做</span> |
+            做对次数：<span id="correct-count">0</span> |
+            半对次数：<span id="half-correct-count">0</span> <!-- 新增：半对次数 -->
+            做错次数：<span id="wrong-count">0</span> |
+            待重练题数：<span id="redo-count">0</span> |
+            <button class="control-btn" onclick="resetAllData()">重置所有记录</button>
+        </div>
+
+        <!-- 题目容器 -->
+        <div class="question-box" id="question-box">
+            <div class="question-type" id="q-type">多选题（2分）</div>
+            <div class="question-content" id="q-content"></div>
+            <div class="options" id="q-options"></div>
+        </div>
+
+        <!-- 结果提示 -->
+        <div class="result" id="result"></div>
+        
+        <!-- 答案解析区域 -->
+        <div class="answer-explanation" id="answer-explanation">
+            <strong>正确答案解析：</strong>
+            <p id="explanation-text"></p>
+            <p style="margin-top:8px;"><strong>正确答案：</strong><span id="correct-answer-text"></span></p> <!-- 显示所有正确答案 -->
+        </div>
+
+        <!-- 按钮组 -->
+        <div class="btn-group">
+            <button class="btn btn-submit" onclick="submitAnswer()">
+                <i class="fas fa-check"></i> 提交答案
+            </button>
+            <button class="btn btn-unsure" onclick="markUnsure()">
+                <i class="fas fa-question-circle"></i> 标记不确定
+            </button>
+            <button class="btn btn-show-answer" onclick="showAnswer()">
+                <i class="fas fa-eye"></i> 查看答案
+            </button>
+        </div>
+
+        <!-- 页码信息 -->
+        <div class="page-info">
+            736道题已加载完成 | 自动记录答题数据（刷新不丢失）
+        </div>
+
+        <!-- 全部完成提示 -->
+        <div class="finish-tip" id="finish-tip">
+            恭喜！所有题目已完成，“做错/不确定”的题目已重练完毕！
+        </div>
+    </div>
+
+    <script>
+        // 核心适配：你的题库格式（正确答案为字符串"ABCD"，无halfCorrectCount字段）
+        const fullQuestionBank = [
+            // 第318题
+            {
+                id: 318,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) “没收官僚资本归新民主主义国家所有”，是新民主主义革命的题中应有之义。反对官僚资本主义并非因为它是资本主义，而是因为这种资本主义 ()",
+                options: ["A. 同大地主、大资产阶级的反革命国家政权密切结合着，成为国民党统治的经济基础", "B. 对中国的经济发展和社会进步起着严重的阻碍作用", "C. 具有革命的要求", "D. 是一种买办的、封建的国家垄断资本主义"],
+                answer: "ABD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第319题
+            {
+                id: 319,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) “三个代表” 重要思想把 () 统一起来，从深层次上揭示了社会主义制度不断完善和发展的途径",
+                options: ["A. 发展先进文化", "B. 建设社会主义生态文明", "C. 发展先进生产力", "D. 实现最广大人民的根本利益"],
+                answer: "ACD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第320题
+            {
+                id: 320,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) “三个代表” 重要思想从 () 方面揭示了社会主义制度自我完善和发展的途径",
+                options: ["A. 经济救援", "B. 文化支撑", "C. 社会基础", "D. 物质基础"],
+                answer: "BCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第321题
+            {
+                id: 321,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) “三个代表” 重要思想最鲜明的特点和最突出的贡献，在于用一系列紧密联系、相互贯通的新思想、新观点、新论断 ()",
+                options: ["A. 进一步回答了什么是社会主义、怎样建设社会主义的问题", "B. 创造性地回答了建设什么样的党、怎样建设党 的问题", "C. 深化了我们对新的时代条件下推进中国特色社会主义事业、加强党的建设的规律的认识", "D. 继承和发展了马克思列宁主义、毛泽东思想、邓小平理论"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第322题
+            {
+                id: 322,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) “四马分肥” 是指在对资本主义工商业进行社会主义改造的第一和第二步，即在实行初级形式的国家资本主义的企业和实行个别企业公私合营的企业，利润按四个方面进行分配即 “四马分肥”。下列属于 “四马” 的是 ()",
+                options: ["A. 国家所得税", "B. 股东收益", "C. 工人福利费", "D. 企业公积金"],
+                answer: "ACD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第323题
+            {
+                id: 323,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 《论十大关系》的报告以苏联的经验为鉴戒，提出探索适合我国国情的社会主义建设道路的任务，报告中的 () 论述了政治生活和思想文化生活领域如何调动各种积极因素的问题",
+                options: ["A. 党与非党的关系", "B. 是非关系", "C. 革命和反革命的关系", "D. 汉族与少数民族的关系"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第324题
+            {
+                id: 324,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 1927 年 10 月，毛泽东率领秋收起义部队来到井冈山，创建了中国第一个农村革命根据地 -- 井冈山革命根据地。在领导农村革命根据地的斗争实践中，毛泽东相继写下了 () 等文章，提出了 “工农武装割据” 思想，初步形成了农村包围城市的革命道路理论",
+                options: ["A.《星星之火，可以燎原》", "B.《井冈山的斗争》", "C.《中国的红色政权为什么能够存在？》", "D.《论持久战》"],
+                answer: "ABC",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第325题
+            {
+                id: 325,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 1928-1930 年，毛泽东相继写下了一系列文章，提出了 \"工农武装割据\"，初步形成了农村包围城市的革命道路理论。这些著作主要有 ()",
+                options: ["A.《井冈山的斗争》", "B.《中国社会各阶级的分析》", "C.《中国的红色政权为什么能够存在？》", "D.《星星之火，可以燎原》"],
+                answer: "ACD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第326题
+            {
+                id: 326,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 1938 年 11 月，毛泽东在《战争和战略问题》中明确指出：“共产党的任务，基本地不是经过长期合法斗争以进入起义和战争，也不是先占城市后取乡村，而是走相反的道路。” 中国走农村包围城市、武装夺取政权道路的依据是 ()",
+                options: ["A. 中国内无民主制度而受封建主义的压迫", "B. 广大农村没有遭遇过反动统治阶级的压迫和剥削", "C. 中国外无民族独立而受帝国主义的压迫", "D. 农民占全国人口绝大多数，是无产阶级可靠的同盟军和革命的主力军"],
+                answer: "ACD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第327题
+            {
+                id: 327,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 1938 年，在党的六届六中全会上，毛泽东明确提出 “马克思主义的中国化” 命题。他强调：“马克思主义的中国化，使之在其每一表现中带着中国的特性，即是说，按照中国的特点去应用它，成为全党亟待了解并亟须解决的问题。” 为了推进马克思主义中国化的事业，毛泽东向全党提出的任务是 ()",
+                options: ["A. 结合百年未有之大变局的世界局势和历史大势", "B. 调查研究当前运动的特点及其规律性", "C. 学习我们的历史遗产并给以批判的总结", "D. 普遍地、深入地学习马克思列宁主义的理论"],
+                answer: "BCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第328题
+            {
+                id: 328,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 1939 年 10 月，毛泽东在《〈共产党人〉发刊词》一文中，总结了当时中国革命已经经历的两次胜利和两次失败的经验教训，把 () 视为战胜敌人的三大法宝",
+                options: ["A. 实事求是", "B. 党的建设", "C. 统一战线", "D. 武装斗争"],
+                answer: "BCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第329题
+            {
+                id: 329,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 1945 年 4 月 23 日至 6 月 11 日，中国共产党第七次全国代表大会在延安召开。毛泽东在《论联合政府》的报告中明确指出：“以马克思列宁主义的理论思想武装起来的中国共产党，在中国人民中产生了新的工作作风。” 中国共产党区别于其他一切政党的优良作风有 ()",
+                options: ["A. 自我批评的作风", "B. 理论和实践相结合的作风", "C. 艰苦奋斗的优良作风", "D. 和人民群众紧密联系在一起的作风"],
+                answer: "ABD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第330题
+            {
+                id: 330,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 1956 年 4 月和 5 月，毛泽东先后在中央政治局扩大会议和最高国务会议上，作了《论十大关系》的报告，这是党探索中国社会主义建设道路的良好开端。《论十大关系》提出 ()",
+                options: ["A. 以苏为鉴，独立自主地探索适合中国情况的社会主义建设道路", "B. 调动一切积极因素为社会主义事业服务", "C.“向科学进军” 的口号", "D. 探索在中国实行改革开放的道路"],
+                answer: "BC",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第331题
+            {
+                id: 331,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 1956 年底我国对农业、手工业和资本主义工商业的社会主义改造的基本完成 ()",
+                options: ["A. 标志着中国历史上长达数千年的阶级剥削制度的结束", "B. 标志着我国的社会主义初级阶段从此开始", "C. 实现了我国由新民主主义社会向社会主义社会的转变", "D. 标志着社会主义基本制度在我国确立"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第332题
+            {
+                id: 332,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 1956 年起，毛泽东开始探索适合中国特点的社会主义建设道路。与此相联系，毛泽东提出了一系列新思想，主要有 ()",
+                options: ["A. 提出马克思主义同中国实际的 “第二次结合”", "B. 提出以苏为鉴", "C. 强调独立自主地探索适合中国情况的社会主义建设道路", "D. 提出 “两个凡是”"],
+                answer: "ABC",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第333题
+            {
+                id: 333,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 1957 年 2 月，毛泽东在扩大的最高国务会议上发表《关于正确处理人民内部矛盾的问题》的讲话，系统论述了社会主义社会矛盾的理论。毛泽东指出 ()",
+                options: ["A. 矛盾是普遍存在的，社会主义社会同样充满着矛盾", "B. 社会主义社会的基本矛盾可以经过社会主义制度本身，不断地得到解决", "C. 社会主义社会的矛盾反映在政治上可以划分为敌我矛盾和人民内部矛盾这两类性质完全不同的矛盾，正确处理人民内部矛盾是国家政治生活的主题", "D. 社会主义社会的基本矛盾仍然是生产关系和生产力之间、上层建筑和经济基础之间的矛盾，它同以往社会的基本矛盾性质是一样的"],
+                answer: "ABC",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第334题
+            {
+                id: 334,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 1957 年 2 月，毛泽东在扩大的最高国务会议上发表《关于正确处理人民内部矛盾的问题》的讲话中，提出了一系列正确处理人民内部矛盾的方针、原则，主要有 ()",
+                options: ["A. 统筹兼顾、适当安排", "B. 百花齐放、百家争鸣", "C. 长期共存、互相监督", "D. 有理、有利、有节"],
+                answer: "ABC",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第335题
+            {
+                id: 335,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 1964 年 12 月 21 日，第三届全国人民代表大会第一次会议在北京召开，周恩来在会议上所作的政府工作报告中正式宣布，“把我国建设成为一个具有 () 的社会主义强国”",
+                options: ["A. 现代科学技术", "B. 现代农业", "C. 现代工业", "D. 现代国防"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第336题
+            {
+                id: 336,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 1981 年 6 月党的十一届六中全会通过的《关于建国以来党的若干历史问题的决议》，科学评价了毛泽东和毛泽东思想的历史地位，把毛泽东思想活的灵魂概括为 ()",
+                options: ["A. 武装斗争", "B. 群众路线", "C. 实事求是", "D. 独立自主"],
+                answer: "BCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第337题
+            {
+                id: 337,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 1992 年，邓小平在南方谈话中明确指出：“计划多一点还是市场多一点，不是社会主义与资本主义的本质区别。计划经济不等于社会主义，资本主义也有计划；市场经济不等于资本主义，社会主义也有市场。计划和市场都是经济手段。” 邓小平的社会主义市场经济理论具有丰富的内涵，其主要观点有 ()",
+                options: ["A. 计划和市场都是经济手段，社会主义实行市场经济是要把二者优势结合起来", "B. 计划经济和市场经济不是划分社会制度的标志", "C. 市场经济作为资源配置手段本身不具有制度属性，可以和不同的社会制度结合", "D. 计划经济等于社会主义，市场经济等于资本主义"],
+                answer: "ABC",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第338题
+            {
+                id: 338,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 20 世纪 80 年代末 90 年代初，中国共产党面临长期而又严峻的国际压力，() 的斗争长期存在，并且异常尖锐、复杂",
+                options: ["A. 分裂与反分裂", "B. 颠覆与反颠覆", "C. 渗透与反渗透", "D. 遏制与反遏制"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第339题
+            {
+                id: 339,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 2001 年 11 月，在卡塔尔首都多哈举行的世界贸易组织第四届部长级会议通过中国加入世界贸易组织的决定。同年 12 月，中国正式加入世界贸易组织。加入世界贸易组织 ()",
+                options: ["A. 标志着我国对外开放进入了一个新的阶段", "B. 是我国面对经济全球化趋势加快作出的重大战略决策", "C. 是我国经济发展和改革开放的需要", "D. 表明我国经济已经实现了由高速增长向高质量发展的转变"],
+                answer: "ABC",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第340题
+            {
+                id: 340,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 2010 年 10 月 15 日至 18 日，党的十七届五中全会在北京召开，全会强调，在当代中国，坚持发展是硬道理的本质要求，就是坚持科学发展，更加注重 ()，促进社会公平正义",
+                options: ["A. 经济高质量发展", "B. 统筹兼顾", "C. 全面协调可持续发展", "D. 保障和改善民生"],
+                answer: "BCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第341题
+            {
+                id: 341,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 2023 年 3 月 19 日，中共中央办公厅印发《关于在全党大兴调查研究的工作方案》，并将在全党大兴调查研究作为在全党开展主题教育的重要内容。之所以说调查研究是我们党的传家宝，是因为 1930 年毛泽东同志就曾在《反对本本主义》一文中深刻指出 ()",
+                options: ["A.“谁是我们的敌人？谁是我们的朋友？这个问题是革命的首要问题”", "B.“没有调查，没有发言权”", "C.“中国革命斗争的胜利要靠中国同志了解中国情况”", "D.“调查就像‘十月怀胎’，解决问题就像‘一朝分娩’，调查就是解决问题”"],
+                answer: "BCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第342题
+            {
+                id: 342,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 把党的建设作为一项伟大工程来推进，是我们党领导人民进行伟大社会革命的重要法宝。中国共产党在加强自身建设中积累的经验包括 ()",
+                options: ["A. 必须重视党的作风建设", "B. 必须在任何时候都重视党的组织建设", "C. 必须联系党的政治路线加强党的建设", "D. 在封建社会传统道德的基础上加强党的思想建设"],
+                answer: "ABC",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第343题
+            {
+                id: 343,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 把资本主义工商业者改造成为自食其力的社会主义劳动者，是适合中国情况的对资本主义工商业进行社会主义改造的道路的主要内容之一，它的优点在于 ()",
+                options: ["A. 既避免了激烈的阶级对抗，减少了改造的阻力，又推动了生产力的发展和社会的进步", "B. 通过改造阶级成分的方式达到从整体上消灭资产阶级的目的", "C. 改造资本家个人与消灭他们所属的资产阶级相结合", "D. 对企业的改造和对人的改造相结合"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第344题
+            {
+                id: 344,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 必须加强国家创新体系建设，抓住那些对我国经济、科技、国防和社会发展具有 () 作用的重大科技课题，抓紧攻关，自主创新，推动关键技术创新和系统集成",
+                options: ["A. 关键性", "B. 战略性", "C. 枢纽性", "D. 基础性"],
+                answer: "ABD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第345题
+            {
+                id: 345,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 从总体上讲，中国共产党领导的革命统一战线，包含着两个联盟：一个是工人阶级同农民阶级、广大知识分子及其他劳动者的联盟，主要是工农联盟；另一个是工人阶级和非劳动人民的联盟，主要是与民族资产阶级的联盟。第二个联盟是非基本的、辅助性的，但又是重要的不可缺少的。因为 ()",
+                options: ["A. 只有建立这个联盟，无产阶级及其政党才能掌握中国革命的全部领导权", "B. 中国民族资产阶级是一个爱国的阶级，在政治上有影响力，在经济上和技术上有重要的作用", "C. 只有建立这个联盟，中国革命的胜利才有完全的保障", "D. 只有建立这个联盟，才能联合一切可以联合的力量，壮大自己，孤立主要的敌人"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第346题
+            {
+                id: 346,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 大力加强党的民主集中制建设，就要按照 () 的原则，完善党委内部的议事和决策机制",
+                options: ["A. 充分协商", "B. 集体领导", "C. 民主集中", "D. 个别酝酿"],
+                answer: "BCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第347题
+            {
+                id: 347,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 大力加强马克思主义理论建设，就要推动马克思主义中国化时代化最新成果进教材、进课堂、进头脑。学好 “毛泽东思想和中国特色社会主义理论体系概论” 课程，就要系统把握马克思主义中国化时代化理论成果所蕴含的马克思主义立场、观点和方法，坚定中国特色社会主义 ()",
+                options: ["A. 制度自信", "B. 理论自信", "C. 文化自信", "D. 道路自信"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第348题
+            {
+                id: 348,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 当今世界，虽然资本主义制度通过自我调节还能为生产力的发展提供一定的空间，但社会主义取代资本主义是历史的必然趋势。在对待资本主义问题上，应采取的做法是 ()",
+                options: ["A. 充分看到学习、借鉴、合作和利用的一面", "B. 坚决抵制各种腐朽的东西和反映资本主义本质属性的东西", "C. 大胆学习和借鉴资本主义国家的一切好东西", "D. 积极参与区域交流和合作"],
+                answer: "ABC",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第349题
+            {
+                id: 349,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 当年，蒋介石在南京宣称，谁控制了北平、上海、广州等城市，谁就控制了中国；毛泽东在井冈山说，谁赢得了农民，谁就会赢得中国。1926 年，毛泽东曾在广州农民运动讲习所任所长，讲习所内展示的红色锦旗依旧赫然：“农为党本”。按当时体例从右向左书写的四个大字，今天从左向右读来就是 “本党为农”。党之所以如此重视农民，是因为 ()",
+                options: ["A. 农民是中国革命的主力军", "B. 中国革命战争实质上就是党领导下的农民战争", "C. 新民主主义革命实质上就是中国共产党领导下的农民革命", "D. 农民阶级是近代中国最革命最进步的阶级"],
+                answer: "ABC",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第350题
+            {
+                id: 350,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 党的基本路线高度概括了党在社会主义初级阶段的 () 以及实现这一目标的基本方针",
+                options: ["A. 根本保证", "B. 基本途径", "C. 领导力量和依靠力量", "D. 奋斗目标"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第351题
+            {
+                id: 351,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 党的十八大以来，中国特色社会主义进入新时代。关于中国特色社会主义新时代，下列说法中正确的有 ()",
+                options: ["A. 是我国不断为人类作出更大贡献的时代", "B. 是决胜全面建成小康社会、进而全面建设社会主义现代化国家的时代", "C. 是承前启后、继往开来、在新的历史条件下继续夺取中国特色社会主义伟大胜利的时代", "D. 是全体中华儿女同心协力、奋力实现中华民族伟大复兴中国梦的时代"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第352题
+            {
+                id: 352,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 党的十二届六中全会根据邓小平关于加强精神文明建设的思想提出要以经济建设为中心，坚定不移地 ()",
+                options: ["A. 进行政治体制改革", "B. 繁荣科学技术", "C. 加强精神文明建设", "D. 进行经济体制改革"],
+                answer: "ACD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第353题
+            {
+                id: 353,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 党的十六届六中全会审议通过的《中共中央关于构建社会主义和谐社会若干重大问题的决定》首次明确提出 \"建设社会主义核心价值体系\"。共同构成社会主义核心价值体系的基本内容包括 ()",
+                options: ["A. 马克思主义指导思想", "B. 以爱国主义为核心的民族精神和以改革创新为核心的时代精神", "C. 社会主义荣辱观", "D. 中国特色社会主义共同理想"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第354题
+            {
+                id: 354,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 党的十三大报告提出了党在社会主义初级阶段的基本路线是领导和团结全国各族人民，以经济建设为中心，坚持 ()，自力更生，艰苦创业，为把我国建设成为富强、民主、文明的社会主义现代化国家而奋斗",
+                options: ["A. 改革开放", "B. 四项基本原则", "C. 和平与发展理念", "D.“两手抓”"],
+                answer: "AB",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第355题
+            {
+                id: 355,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 党的十三届四中全会以后，我们党在建设中国特色社会主义的伟大实践基础上，科学回答了 ()，党如何保持国民经济的可持续发展等一系列紧迫而重大的问题，进一步推进了改革开放和社会主义现代化建设事业",
+                options: ["A. 党如何解决经济发展与资源、环境的矛盾", "B. 党如何正确处理社会主义现代化建设中的若干重大关系", "C. 党如何推进政治体制改革", "D. 党如何完善社会主义市场经济体制"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第356题
+            {
+                id: 356,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 党的十五大报告明确提出坚持依法治国，建设社会主义法治国家。1999 年 3 月 15 日，第九届全国人民代表大会第二次会议通过了《中华人民共和国宪法修正案》，把 “实行依法治国，建设社会主义法治国家” 正式写入了宪法。依法治国，是 ()",
+                options: ["A. 发展社会主义市场经济的客观需要", "B. 党领导人民治理国家的基本方略", "C. 国家长治久安的重要保障", "D. 社会文明进步的重要标志"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第357题
+            {
+                id: 357,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 党的十一届三中全会以来，我们坚持对外开放基本国策，打开国门搞建设，实现了从封闭半封闭到全方位开放的伟大历史转折。对外开放包括 () 等领域的开放",
+                options: ["A. 经济", "B. 教育", "C. 科技", "D. 文化"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第358题
+            {
+                id: 358,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 党的作风就是党的形象，关系人心向背，关系党的生死存亡。在新中国成立前后，毛泽东多次提出务必使同志们继续地保持 () 的作风，务必使同志们继续地保持艰苦奋斗的作风",
+                options: ["A. 不骄", "B. 谨慎", "C. 谦虚", "D. 不躁"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第359题
+            {
+                id: 359,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 党领导的新民主主义革命，目的是 ()，确立人民民主专政为核心的新的政治上层建筑，从根本上解放被束缚的生产力",
+                options: ["A. 消灭地主阶级和官僚资产阶级的剥削和压迫", "B. 改变买办的封建的生产关系", "C. 取消帝国主义在中国的特权", "D. 消灭民族资产阶级"],
+                answer: "ABC",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第360题
+            {
+                id: 360,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 党员干部是党和国家事业的中坚力量，邓小平提出干部队伍 “()” 的方针，反复强调要选拔党性好、作风好、团结好，全心全意为人民服务的接班人",
+                options: ["A. 年轻化", "B. 革命化", "C. 知识化", "D. 专业化"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第361题
+            {
+                id: 361,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 党在领导新民主主义革命的过程中，逐步形成了 () 的优良作风，这是中国共产党区别于其他任何政党的显著标志",
+                options: ["A. 理论联系实际", "B. 密切联系群众", "C. 互相制衡、相互独立", "D. 批评与自我批评相结合"],
+                answer: "ABD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第362题
+            {
+                id: 362,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 邓小平关于社会主义本质的理论概括是对传统社会主义观的发展，这是因为它 ()",
+                options: ["A. 突出强调消灭剥削，消除两极分化，最终达到共同富裕的发展目标", "B. 否定了长期以来持有的社会主义必须坚持公有制和按劳分配原则的传统观念", "C. 突出强调解放和发展生产力，纠正了过去忽视生产力发展的错误观念", "D. 摆脱了长期以来拘泥于具体模式而忽略社会主义本质的错误倾向"],
+                answer: "ACD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第363题
+            {
+                id: 363,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 邓小平关于社会主义初级阶段的论断，表现出对社会主义建设的 () 有清醒的思想准备",
+                options: ["A. 长期性", "B. 紧迫性", "C. 艰巨性", "D. 复杂性"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第364题
+            {
+                id: 364,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 邓小平指出：“革命胜利以后，也正是在毛泽东思想的指导下，我们的社会主义建设才获得了这样伟大的成就，并且继续胜利地前进着。” 毛泽东思想关于社会主义建设的基本思想观点，仍具有重要的现实指导作用，其中包括 ()",
+                options: ["A. 关于走中国工业化道路的思想", "B. 关于正确认识和处理社会主义社会基本矛盾的思想", "C. 关于完善社会主义政治制度、扩大社会主义民主的思想", "D. 关于调动一切积极因素为社会主义事业服务的思想"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第365题
+            {
+                id: 365,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 敌我矛盾是根本利益对立基础上的矛盾，因而是对抗性的矛盾。对于国家内部那些反抗社会主义改造、破坏社会主义建设的敌对分子和严重犯罪分子，要采取专政的方法，其具体做法包括 ()",
+                options: ["A. 在劳动中尽量使其改造成为新人", "B. 剥夺政治权利", "C. 强迫从事劳动", "D. 依法治罪"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第366题
+            {
+                id: 366,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 调动各方面积极因素是我们党的传统。调动一切积极因素为社会主义事业服务，必须发展社会主义民主政治，其具体要求包括 ()",
+                options: ["A. 着手系统地制定比较完备的法律", "B. 开展反对官僚主义的斗争", "C. 加强党对于国家机关的领导和监督", "D. 巩固人民民主专政政权"],
+                answer: "ABC",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第367题
+            {
+                id: 367,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 对外开放是推动我国经济社会发展的重要动力，以开放促改革、促发展是我国发展不断取得新成就的重要法宝。在对外开放的过程中，在坚持 () 的同时，必须头脑清醒，始终把国家的主权和安全放在第一位",
+                options: ["A. 照搬照抄", "B. 开放合作", "C. 利用", "D. 借鉴"],
+                answer: "BCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第368题
+            {
+                id: 368,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 对我国社会主义改造中出现的国家资本主义经济的认识，正确的有 ()",
+                options: ["A. 这种新式国家资本主义经济是带着很大的社会主义性质的，是对工人和国家有利的", "B. 已经不是普通的资本主义经济，而是一种特殊的资本主义经济，即新式的国家资本主义经济", "C. 主要地不是为了资本家的利润而存在，而是为了供应人民和国家的需要而存在", "D. 是在人民政府管理之下的，用各种形式和国营社会主义经济联系着的，并受工人监督的资本主义经济"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第369题
+            {
+                id: 369,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 对资本主义工商业的社会主义改造，要实现对企业的改造和对人的改造相结合，改造资本家个人与消灭他们所属的资产阶级相结合。国家对资方在职人员和资方代理人采取 “包下来” 的政策，具体做法是 ()",
+                options: ["A. 工作上发挥作用", "B. 生活上妥善照顾", "C. 以企业为基地，“量才使用，适当照顾”", "D. 政治上适当安排"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第370题
+            {
+                id: 370,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 发展观是关于发展的 () 的总体看法和根本观点，决定了经济社会发展的总体战略和基本模式，对经济社会发展实践具有根本性、全局性的重大影响",
+                options: ["A. 本质", "B. 要求", "C. 内涵", "D. 目的"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第371题
+            {
+                id: 371,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 发展社会主义先进文化，就是发展面向现代化、面向世界、面向未来的，民族的科学的大众的社会主义文化，实现 () 的目标",
+                options: ["A. 以高尚的精神塑造人", "B. 以非凡的表演鼓舞人", "C. 以正确的舆论引导人", "D. 以科学的理论武装人"],
+                answer: "ACD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第372题
+            {
+                id: 372,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 发展是党执政兴国的第一要务。关于正确认识和处理改革、发展、稳定的关系，以下说法正确的有 ()",
+                options: ["A. 把不断改善人民生活作为处理改革、发展、稳定关系的重要结合点", "B. 要把改革的力度、发展的速度和社会可承受的程度统一起来", "C. 在社会稳定中推进改革发展，通过改革发展促进社会稳定", "D. 改革是动力，发展是目的，稳定是前提"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第373题
+            {
+                id: 373,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 改革开放以来，我们在坚持根本政治制度、基本政治制度的基础上，不断深化政治体制改革，推进制度体系完善和发展。政治体制改革要着重加强制度建设，实现社会主义民主政治的 ()",
+                options: ["A. 制度化", "B. 规范化", "C. 精准化", "D. 程序化"],
+                answer: "ABD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第374题
+            {
+                id: 374,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 改革是一项崭新的事业，是一个大试验。判断改革和各方面工作的是非得失的标准，归根到底，要以是否有利于 ()",
+                options: ["A. 发展社会主义社会的生产力", "B. 增强社会主义国家的综合国力", "C. 限制私营经济发展", "D. 提高人民的生活水平"],
+                answer: "ABD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第375题
+            {
+                id: 375,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 关于社会主义革命和社会主义建设的重要思想，集中体现于毛泽东 () 等著作中，是毛泽东思想的丰富和发展",
+                options: ["A.《湖南农民运动考察报告》", "B.《论人民民主专政》", "C.《关于正确处理人民内部矛盾的问题》", "D.《论十大关系》"],
+                answer: "BCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第376题
+            {
+                id: 376,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 关于执政党的建设，下列做法中正确的有 ()",
+                options: ["A. 坚持民主集中制", "B. 坚持集体领导制度", "C. 反对党内主观主义、宗派主义、官僚主义", "D. 批评脱离实际、脱离群众的思想作风"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第377题
+            {
+                id: 377,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 关于走工业化道路，陈云提出 \"三个主体，三个补充\" 的设想包括 ()",
+                options: ["A. 在社会主义的统一市场里，国家市场是它的主体，一定范围内的国家领导的自由市场是国家市场的补充", "B. 在工商业经营方面，国家经济和集体经济是工商业的主体，一定数量的个体经济是国家经济和集体经济的补充", "C. 在对外交流方面自力更生是主体，引进技术是补充", "D. 在生产计划方面，计划生产是工农业生产的主体，按照市场变化在国家计划许可范围内的自由生产是计划生产的补充"],
+                answer: "ABD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第378题
+            {
+                id: 378,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 观察形势、认识形势、掌握形势，是科学制定对外方针政策的前提。党的十八大以来，世界百年未有之大变局加速演进，其具体表现包括 ()",
+                options: ["A. 新一轮科技革命和产业变革带来的新陈代谢和激烈竞争前所未有", "B. 世界经济版图发生的深刻变化前所未有", "C. 国际力量对比发生的革命性变化前所未有", "D. 全球治理体系的不适应、不对称前所未有"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第379题
+            {
+                id: 379,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 回顾我国改革开放 40 多年来的发展历程与取得的辉煌成就，很重要的经验就是始终坚持在社会主义制度下发展市场经济，坚持社会主义市场经济改革方向。社会主义市场经济体制要完善政府的 () 的职能",
+                options: ["A. 社会管理", "B. 经济调节", "C. 公共服务", "D. 市场监管"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第380题
+            {
+                id: 380,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 加快形成新的经济发展方式，就要使经济发展更多依靠内需特别是消费需求拉动，更多依靠 ()",
+                options: ["A. 现代服务业和战略性新兴产业带动", "B. 城乡区域发展协调互动", "C. 低廉的劳动力成本", "D. 节约资源和循环经济推动"],
+                answer: "ABD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第381题
+            {
+                id: 381,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 加强和创新社会管理，就要围绕构建中国特色社会主义社会管理体系，加快形成 () 相结合的社会管理机制",
+                options: ["A. 动态管理", "B. 应急处置", "C. 源头治理", "D. 安全防范"],
+                answer: "ABC",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第382题
+            {
+                id: 382,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 坚持可持续发展，必须走文明发展道路。文明发展道路的内容有 ()",
+                options: ["A. 生态良好", "B. 生产发展", "C. 生活富裕", "D. 创新驱动"],
+                answer: "ABC",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第383题
+            {
+                id: 383,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 坚持可持续发展，就要坚定走 () 的文明发展道路",
+                options: ["A. 自我净化", "B. 生产发展", "C. 生态良好", "D. 生活富裕"],
+                answer: "BCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第384题
+            {
+                id: 384,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 坚持全面发展，就是要按照中国特色社会主义事业总体布局，正确认识和把握 ()、生态文明建设是相互联系、相互促进的有机统一体",
+                options: ["A. 政治建设", "B. 社会建设", "C. 文化建设", "D. 经济建设"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第385题
+            {
+                id: 385,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 坚持协调发展，就要协调好 ()，市场机制与宏观调控等经济发展的重大问题，促进发展的均衡性",
+                options: ["A. 消费与投资", "B. 科技进步与人力资源优势的充分发挥", "C. 发展的速度和结构、质量、效益", "D. 供给与需求"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第386题
+            {
+                id: 386,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 坚持协调发展，就要协调好 ()、市场机制与宏观调控等经济发展的重大问题，促进发展的均衡性",
+                options: ["A. 供给与需求", "B. 发展的速度和结构、质量、效益", "C. 消费与投资", "D. 科技进步与人力资源优势的充分发挥"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第387题
+            {
+                id: 387,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 坚持协调发展，就要正确处理 ()、国内发展和对外开放、改革发展稳定等现代化建设中的重大关系",
+                options: ["A. 城市与农村发展", "B. 东中西部发展", "C. 人与自然界发展", "D. 经济与社会发展"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第388题
+            {
+                id: 388,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 建立最广泛的统一战线，是党克敌制胜的重要法宝。新民主主义革命时期，以国共合作为基础所建立的统一战线有 ()",
+                options: ["A. 抗日民族统一战线", "B. 工农民主统一战线", "C. 人民民主统一战线", "D. 第一次国共合作的统一战线"],
+                answer: "AD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第389题
+            {
+                id: 389,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 建设社会主义政治文明，就要深化干部人事制度改革，努力形成 () 的用人机制，把优秀人才集聚到党和国家的各项事业中来",
+                options: ["A. 广纳群贤", "B. 能上能下", "C. 人尽其才", "D. 充满活力"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第390题
+            {
+                id: 390,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 建设社会主义政治文明涉及政治思想、政治制度、行政管理、法制建设等方面，是一个系统工程，最根本的就是要 () 有机统一",
+                options: ["A. 人民当家作主", "B. 坚持文化强国", "C. 依法治国", "D. 坚持党的领导"],
+                answer: "ACD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第391题
+            {
+                id: 391,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 阶级斗争是社会基本矛盾在阶级社会中的表现。毛泽东在 () 等著作中，分析了中国社会各阶级在革命中的地位和作用，明确指出无产阶级领导农民斗争的极端重要性，提出了关于新民主主义革命的基本思想",
+                options: ["A.《中国社会各阶级的分析》", "B.《论十大关系》", "C.《论人民民主专政》", "D.《湖南农民运动考察报告》"],
+                answer: "AD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第392题
+            {
+                id: 392,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 节约资源是我国的基本国策，是维护国家资源安全、推进生态文明建设、推动高质量发展的一项重大任务。我国资源禀赋先天不足，() 等战略性资源的人均拥有量远低于世界平均水平",
+                options: ["A. 天然气", "B. 石油", "C. 煤炭", "D. 稀土"],
+                answer: "ABC",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第393题
+            {
+                id: 393,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 解决台湾问题、实现祖国完全统一，是党矢志不渝的历史任务。关于祖国统一，1956 年 4 月，毛泽东提出 () 等政策主张",
+                options: ["A.“爱国一家”", "B.“和为贵”", "C.“一国两制”", "D.“爱国不分先后”"],
+                answer: "ABD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第394题
+            {
+                id: 394,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 近代以来的各种思潮中，未能改变旧中国的社会性质和中国人民的悲惨命运的有 ()",
+                options: ["A. 民粹主义", "B. 自由主义", "C. 无政府主义", "D. 社会达尔文主义"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第395题
+            {
+                id: 395,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 经过 ()，实事求是的思想路线在全党得到了确立",
+                options: ["A. 延安整风", "B. 党的五大", "C. 古田会议", "D. 党的七大"],
+                answer: "AD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第396题
+            {
+                id: 396,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 经过新中国成立后头三年的恢复和建设，我国社会经济结构中公私经济比重已发生转折性变化，社会主义国营经济迅速发展。社会主义国营经济相对于其他经济成分的优越性的具体表现包括 ()",
+                options: ["A. 大多技术比较先进", "B. 劳动生产率比较高", "C. 职工生活稳定", "D. 职工主人翁意识强"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第397题
+            {
+                id: 397,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 经济特区是我国改革开放的重要窗口和试验平台。经济特区的成功实践，充分证明了党的十一届三中全会以来形成的党的基本理论、基本路线、基本方略是完全正确的，中国特色社会主义道路是实现社会主义现代化、创造人民美好生活的必由之路。经济特区要继续争当建设中国特色社会主义的示范地区，继续充分发挥 () 的窗口的作用",
+                options: ["A. 对外政策", "B. 知识", "C. 技术", "D. 管理"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第398题
+            {
+                id: 398,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 科技决定未来，教育关乎发展，建设创新型国家，就要把科技和教育摆在优先发展的战略地位，坚持 () 的方针，制定和实施正确有效的科技政策措施",
+                options: ["A. 重点跨越", "B. 支撑发展", "C. 引领未来", "D. 自主创新"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第399题
+            {
+                id: 399,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 科学发展观创造性地回答了新形势下实现什么样的发展、怎样发展等重大问题。科学发展观的集中概括是 ()",
+                options: ["A. 核心立场是以人为本", "B. 根本方法是统筹兼顾", "C. 第一要义是发展", "D. 基本要求是全面协调可持续"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第400题
+            {
+                id: 400,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 科学发展观提出统筹兼顾的根本要求，把发展看作是相互推进、系统协调的过程，强调 ()，使各个方面、各个环节协调一致地运转",
+                options: ["A. 科学筹划", "B. 兼顾各方", "C. 协调发展", "D. 总揽全局"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第401题
+            {
+                id: 401,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 科学发展观要求正确处理 () 等社会主义现代化建设中的一系列重大关系",
+                options: ["A. 经济发展与社会发展", "B. 发展速度与效益", "C. 改革发展稳定", "D. 市场机制与宏观调控"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第402题
+            {
+                id: 402,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 科学技术作为先进生产力的重要标志，是推动社会文明进步的重要力量。科技进步日新月异，以信息技术为核心的高新技术的发展，极大地改变了 ()",
+                options: ["A. 生活方式", "B. 社会历史发展总趋势", "C. 生产方式", "D. 国际经济"],
+                answer: "ACD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第403题
+            {
+                id: 403,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 马克思给我们留下的最有价值、最具影响力的精神财富，就是以他名字命名的科学理论 -- 马克思主义。马克思主义是 (), 自诞生以来就始终占据着真理和道义的制高点",
+                options: ["A. 实践的理论", "B. 人民的理论", "C. 科学的理论", "D. 不断发展的开放的理论"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第404题
+            {
+                id: 404,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 马克思主义是我们立党立国、兴党强国的根本指导思想。党之所以能够领导人民在一次次求索、一次次挫折、一次次开拓中完成中国其他各种政治力量不可能完成的艰巨任务，根本在于坚持 ()",
+                options: ["A. 实践是检验真理的唯一标准", "B. 把马克思主义基本原理同中国具体实际相结合、同中华优秀传统文化相结合", "C. 一切从实际出发，及时回答时代之问、人民之问，不断推进马克思主义中国化时代化", "D. 解放思想、实事求是、与时俱进、求真务实"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第405题
+            {
+                id: 405,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 马克思主义是我们立党立国、兴党兴国的根本指导思想。实践告诉我们，中国共产党为什么能，中国特色社会主义为什么好，归根到底是因为马克思主义行，是中国化时代化的马克思主义行。马克思主义中国化时代化，就是 ()",
+                options: ["A. 科学回答时代提出的重大理论和实践课题，创造新的理论成果", "B. 深入研究和解决中国革命、建设、改革不同历史时期的实际问题", "C. 立足中国国情和时代特点", "D. 坚持把马克思主义基本原理同中国具体实际相结合、同中华优秀传统文化相结合"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第406题
+            {
+                id: 406,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 马克思主义中国化时代化的理论成果是一脉相承又与时俱进的关系。毛泽东思想所蕴含的马克思主义的立场、观点和方法，为中国特色社会主义理论体系提供了基本遵循；中国特色社会主义理论体系在新的历史条件下进一步丰富和发展了毛泽东思想。它们都是 ()",
+                options: ["A. 马克思列宁主义在中国的运用和发展", "B. 关于中国革命的正确的理论原则和经验总结", "C. 党和国家必须长期坚持的指导思想", "D. 全国各族人民团结奋斗的共同思想基础"],
+                answer: "ACD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第407题
+            {
+                id: 407,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 马克思主义中国化时代化的理论成果是一脉相承又与时俱进的关系。中国特色社会主义理论体系在新的历史条件下进一步丰富和发展了毛泽东思想。毛泽东思想和中国特色社会主义理论体系，都是 ()",
+                options: ["A. 以独创性的理论成果丰富和发展了马克思主义的理论宝库", "B. 马克思列宁主义在中国的运用和发展", "C. 全国各族人民团结奋斗的共同思想基础", "D. 中国革命、建设、改革经验的科学总结"],
+                answer: "ABC",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第408题
+            {
+                id: 408,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 毛泽东把 () 运用于党的全部工作，在中国革命和建设的长期艰苦奋斗中形成了具有中国共产党人特色的立场、观点和方法，丰富和发展了马克思列宁主义",
+                options: ["A. 辩证唯物主义", "B. 历史唯物主义", "C. 机械唯物主义", "D. 历史唯心主义"],
+                answer: "AB",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第409题
+            {
+                id: 409,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 毛泽东思想是在我国 () 的实践过程中，在总结我国革命和建设正反两方面历史经验的基础上，逐步形成和发展起来的",
+                options: ["A. 社会主义革命", "B. 改革开放和社会主义现代化建设", "C. 新民主主义革命", "D. 社会主义建设"],
+                answer: "ACD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第410题
+            {
+                id: 410,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 毛泽东思想以独创性的理论丰富和发展了马克思列宁主义。以下 () 都体现出这一伟大贡献",
+                options: ["A. 社会主义革命和建设", "B. 军队和国防建设", "C. 政策和策略", "D. 新民主主义革命"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第411题
+            {
+                id: 411,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 毛泽东提出探索马克思主义同中国实际即社会主义建设实际的 “第二次结合”，说明中国共产党 ()",
+                options: ["A. 开始改革开放的事业", "B. 开始摆脱苏联模式", "C. 开始重新认识 “什么是社会主义，怎样建设社会主义”", "D. 开始探索适合中国特点的社会主义建设道路"],
+                answer: "BD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第412题
+            {
+                id: 412,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 毛泽东在 () 等著作中，运用马克思主义的认识论和辩证法，系统分析了党内 “左” 的和右的错误的思想根源",
+                options: ["A.《论持久战》", "B.《抗日游击战争的战略问题》", "C.《矛盾论》", "D.《实践论》"],
+                answer: "CD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第413题
+            {
+                id: 413,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 毛泽东在 () 等著作中，指明了中国革命的发展规律，提出并深入阐述了农村包围城市、武装夺取政权的思想，这标志着毛泽东思想的初步形成",
+                options: ["A.《中国的红色政权为什么能够存在？》", "B.《井冈山的斗争》", "C.《星星之火，可以燎原》", "D.《论十大关系》"],
+                answer: "ABC",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第414题
+            {
+                id: 414,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 毛泽东在《〈共产党人〉发刊词》一文中，总结了中国革命两次胜利和两次失败的经验教训，揭示了中国革命发展的客观规律。他指出，中国共产党在中国革命中战胜敌人的主要的法宝是 ()",
+                options: ["A. 群众路线", "B. 武装斗争", "C. 党的建设", "D. 统一战线"],
+                answer: "BCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第415题
+            {
+                id: 415,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 毛泽东在谈到党对民主革命规律的认识时指出，从党的建立到抗日时期，我们经过了两次胜利两次失败。“在抗日时期，我们才制定了合乎情况的党的总路线和一整套具体政策。这时候，中国民主革命这个必然王国才被我们认识，我们才有了自由”。这表明 ()",
+                options: ["A. 新民主主义革命理论是总结正反两方面经验形成的", "B. 党已完全掌握了新民主主义革命的发展规律", "C. 马克思主义必须与中国革命具体实际相结合", "D. 党对民主革命规律的认识必须有一个过程"],
+                answer: "ACD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第416题
+            {
+                id: 416,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 没收官僚资本是中国共产党新民主主义革命总路线内容的一个重要发展，是为把新民主主义革命转变为社会主义革命进行准备的重要条件。反对官僚资本主义的原因包括 ()",
+                options: ["A. 官僚资本主义同外国帝国主义、本国地主阶级和旧式富农密切地结合着", "B. 官僚资本主义同大地主大资产阶级的反革命国家政权密切结合着，成为国民党统治的经济基础", "C. 官僚资本主义对中国的经济发展和社会进步起着严重的阻碍作用", "D. 官僚资本主义是一种买办的封建的国家垄断资本主义"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第417题
+            {
+                id: 417,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 民族精神是一个民族不同于其他民族根本的文化标识，在五千多年的发展进程中，中华民族形成了以爱国主义为核心的 () 的伟大民族精神",
+                options: ["A. 勤劳勇敢", "B. 自强不息", "C. 爱好和平", "D. 团结统一"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第418题
+            {
+                id: 418,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 群众路线是毛泽东思想活的灵魂的三个基本方面的内容之一。群众路线就是 ()",
+                options: ["A. 从群众中来", "B. 一切依靠群众", "C. 一切为了群众", "D. 到群众中去"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第419题
+            {
+                id: 419,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 人才是第一资源，是全面建设社会主义现代化国家的基础性、战略性支撑，我们要紧紧抓住 () 环节，大力实施人才战略，加强人才队伍建设",
+                options: ["A. 识别人才", "B. 用好人才", "C. 吸引人才", "D. 培养人才"],
+                answer: "BCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第420题
+            {
+                id: 420,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 人民健康是民族昌盛和国家富强的重要标志，发展医药卫生，就要重点推进 ()、监管体制综合改革，完善国民健康政策，为群众提供安全有效方便价廉的公共卫生和基本医疗服务",
+                options: ["A. 医疗保障", "B. 药品供应", "C. 公共卫生", "D. 医疗服务"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第421题
+            {
+                id: 421,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 如何在中国这样一个经济文化比较落后的东方大国建设社会主义，涉及党对 () 等一系列重大问题的认识和判断",
+                options: ["A. 时代主题", "B. 历史方位", "C. 基本国情", "D. 国际形势"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第422题
+            {
+                id: 422,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 社会主义发展的历史证明，苏联模式是特定历史条件下的产物，并不是社会主义的唯一模式。由于受苏联工业化模式的影响，我国一度过多强调 () 的建设，影响了农业和轻工业的发展，造成了一定程度的比例失调",
+                options: ["A. 重工业", "B. 基础设施", "C. 手工业", "D. 加工业、制造业"],
+                answer: "AB",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第423题
+            {
+                id: 423,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 社会主义改造基本完成以后，中国共产党面临如何进行社会主义建设的问题。毛泽东明确提出：“现在是社会主义革命和建设时期，我们要进行第二次结合，找出在中国怎样建设社会主义的道路”。1956 年，以毛泽东同志为主要代表的中国共产党人提出了一系列关于建设社会主义的重要方针，其中包括 ()",
+                options: ["A. 在经济建设上实行 “既反保守又反冒进” 的方针", "B. 在科学文化工作中实行 “百花齐放，百家争鸣” 的方针", "C. 在对外关系上实行 “一边倒” 的方针", "D. 在党与民主党派关系上实行 “长期共存，互相监督” 的方针"],
+                answer: "ABD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第424题
+            {
+                id: 424,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 社会主义市场经济体制是中国特色社会主义的重大理论和实践创新，是社会主义基本经济制度的重要组成部分。对社会主义市场经济体制认识正确的有 ()",
+                options: ["A. 它在所有制结构上，以公有制为主体、多种所有制经济共同发展", "B. 它是同社会主义基本制度结合在一起的市场经济体制", "C. 它与资本主义市场经济体制并无共同点", "D. 我国初步建立社会主义市场经济体制是在 20 世纪中期"],
+                answer: "AB",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第425题
+            {
+                id: 425,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 社会主义制度建立以后，也有一个如何认清国情、正确判断我国社会所处历史方位的问题。社会主义初级阶段理论 ()",
+                options: ["A. 正确揭示了当代中国的历史方位，从而明确了建设中国特色社会主义的总依据", "B. 使我们对社会主义建设的长期性、复杂性、艰巨性有了更加清醒的认识", "C. 是对马克思主义关于社会主义发展阶段理论的重大发展和重大突破", "D. 提出了全面建成社会主义现代化强国的战略安排"],
+                answer: "ABC",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第426题
+            {
+                id: 426,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 实践没有止境，理论创新也没有止境。改革开放以来，我们党继续推进马克思主义中国化时代化，形成和发展了中国特色社会主义理论体系。中国特色社会主义理论体系逐步形成和发展的社会历史条件是 ()",
+                options: ["A. 对建设社会主义正反两方面经验的认真总结", "B. 对中国特色社会主义建设实践经验的科学总结", "C. 对我国发展历史方位的科学判断", "D. 对国际形势深刻变化和世界发展新趋势的深刻把握"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第427题
+            {
+                id: 427,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 实事求是，就是一切从实际出发，理论联系实际，不断地深化对中国国情的认识，找出适合中国情况的革命和建设道路，确定我们党领导人民改造中国、建设中国的战略策略，实现推动历史前进的目标。实事求是，是 ()",
+                options: ["A. 毛泽东思想的基本点和精髓", "B. 中国共产党人认识世界、改造世界的根本要求", "C. 马克思主义的根本观点", "D. 中国共产党的基本思想方法、工作方法、领导方法"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第428题
+            {
+                id: 428,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 世界百年未有之大变局加速演进，人类面临许多共同挑战，() 等问题越来越严重",
+                options: ["A. 和平赤字", "B. 信任赤字", "C. 发展赤字", "D. 治理赤字"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第429题
+            {
+                id: 429,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 适合我国情况的农业社会主义改造道路，要遵循 () 的原则，以互助合作的优越性吸引农民走互助合作道路",
+                options: ["A. 自愿互利", "B. 强制剥夺", "C. 典型示范", "D. 国家帮助"],
+                answer: "ACD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第430题
+            {
+                id: 430,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 思想道德建设是社会主义精神文明的重要组成部分，是贯彻以德治国方略的重要环节。关于加强社会主义思想道德建设，应采取的做法是 ()",
+                options: ["A. 把弘扬和培育民族精神纳入国民教育全过程", "B. 加强社会公德、职业道德和家庭美德教育", "C. 引导人们树立中国特色社会主义共同理想", "D. 广泛开展群众性精神文明创建活动"],
+                answer: "BCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第431题
+            {
+                id: 431,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 思想建设是党的基础性建设。针对历史上党内斗争中存在过的 “左” 的错误，毛泽东提出 () 的正确方针，强调在党内斗争中要达到既弄清思想又团结同志的目的",
+                options: ["A. 重点教育", "B. 训诫警示", "C. 惩前毖后", "D. 治病救人"],
+                answer: "CD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第432题
+            {
+                id: 432,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 思想政治工作是党的优良传统、鲜明特色和突出政治优势。做好思想政治工作，要发扬好的传统，同时要不断加以改进，增强 ()",
+                options: ["A. 震撼性", "B. 感染力", "C. 实效性", "D. 说服力"],
+                answer: "BCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第433题
+            {
+                id: 433,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 随着改革开放和社会主义市场经济的发展，我国社会生活发生了广泛而深刻的变化，()、分配方式日益多样化",
+                options: ["A. 利益关系", "B. 社会经济成分", "C. 组织形式", "D. 就业方式"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第434题
+            {
+                id: 434,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 随着社会主义改造的完成，以生产资料私有制、按劳分配和计划经济体制为特征的社会主义经济制度建立起来。我国对农业、手工业和资本主义工商业的改造，都采取了 () 的方式",
+                options: ["A. 迂回推进", "B. 逐步过渡", "C. 区别对象", "D. 积极引导"],
+                answer: "BCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第435题
+            {
+                id: 435,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 随着政治与社会经济的发展，社会主义先进文化成为体现社会主义制度优越性的重要方面。发展先进文化，就是发展面向 () 的，民族的科学的大众的社会主义文化",
+                options: ["A. 世界", "B. 现代化", "C. 过去", "D. 未来"],
+                answer: "ABD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第436题
+            {
+                id: 436,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 所谓赎买，就是国家有偿地将私营企业改变为国营企业，将资本主义私有制改变为社会主义公有制。我国之所以能够采取赎买的方式对资本主义工商业进行和平改造，其原因在于 ()",
+                options: ["A. 国家对粮食和工业原料的统购统销，以及资本主义企业中工人群众对资本家的监督", "B. 人民民主专政的国家政权和强大的国营经济造成私人资本主义在政治上、经济上对社会主义的依赖", "C. 中国共产党与民族资产阶级长期保持着统一战线的关系", "D. 民族资产阶级具有两面性"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第437题
+            {
+                id: 437,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 提高党的执政能力，就要不断提高 () 的能力、应对国际局势和处理国际事务的能力",
+                options: ["A. 建设社会主义先进文化", "B. 构建社会主义和谐社会", "C. 驾驭社会主义市场经济", "D. 发展社会主义民主政治"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第438题
+            {
+                id: 438,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 统一战线是党的总路线总政策的重要组成部分，在我国革命、建设、改革不同历史时期发挥了重要作用，是 ()",
+                options: ["A. 团结海内外全体中华儿女实现中华民族伟大复兴的重要法宝", "B. 凝聚人心、汇聚力量的强大法宝", "C. 消除国共两党之间阶级矛盾的重要方针", "D. 党克敌制胜、执政兴国的重要法宝"],
+                answer: "ABD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第439题
+            {
+                id: 439,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 统一战线是无产阶级政党策略思想的重要内容，是凝聚各方面力量，促进 ()、海内外同胞关系的和谐，夺取中国特色社会主义新胜利的重要法宝",
+                options: ["A. 宗教关系", "B. 民族关系", "C. 阶层关系", "D. 政党关系"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第440题
+            {
+                id: 440,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 统一战线是中国共产党凝聚人心、汇聚力量的政治优势和战略方针。中国革命必须建立最广泛的统一战线，这是由 () 决定的",
+                options: ["A. 和平与发展的时代主题", "B. 中国革命的长期性、残酷性及其发展的不平衡性", "C. 近代中国社会最大的压迫是阶级压迫", "D. 中国半殖民地半封建社会的阶级状况"],
+                answer: "BD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第441题
+            {
+                id: 441,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 土地革命战争时期，毛泽东指出：“一国之内，在四周白色政权的包围中，有一小块或若干小块红色政权的区域长期地存在，这是世界各国从来没有的事。这种奇事的发生，有其独特的原因。” 红色政权能够存在和发展的原因是 ()",
+                options: ["A. 国民革命的政治影响及良好的群众基础", "B. 全国革命形势的继续向前发展", "C. 相当力量正式红军的存在以及党的领导的有力量及其正确的政策", "D. 近代中国是多个帝国主义间接统治的半殖民地国家，社会政治经济发展极端不平衡"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第442题
+            {
+                id: 442,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 土地革命战争时期，以毛泽东为主要代表的中国共产党人，在同党内一度盛行的 () 的错误倾向的斗争中，逐步开辟了农村包围城市、武装夺取政权的革命道路",
+                options: ["A. 托派 “不断革命” 理论", "B. 把共产国际决议神圣化", "C. 机械照搬苏联经验", "D. 把马克思主义教条化"],
+                answer: "BCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第443题
+            {
+                id: 443,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 推进产业结构调整是经济结构调整的主要内容，必须坚持走中国特色新型工业化道路，发展 () 的现代产业体系",
+                options: ["A. 清洁安全", "B. 结构优化", "C. 技术先进", "D. 向外为主"],
+                answer: "ABC",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第444题
+            {
+                id: 444,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 推进城乡发展一体化，是工业化、城镇化、农业现代化发展到一定阶段的必然要求，是国家现代化的重要标志。推动城乡发展一体化，就要加快完善城乡发展一体化体制机制，形成 () 的新型工农、城乡关系",
+                options: ["A. 城乡一体", "B. 以城带乡", "C. 以农促工", "D. 工农互惠"],
+                answer: "ABD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第445题
+            {
+                id: 445,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 为适应公私合营高潮迅速到来的形势，中共中央和国务院正确地制定并实行了对资产阶级的以和平赎买、从宽照顾为核心的一系列方针政策，保证了对资本主义工商业社会主义改造的顺利进行。对资产阶级的和平赎买不仅有利于资本家接受改造，而且能继续发挥私营工商业在 () 等方面的积极作用",
+                options: ["A. 统购统销", "B. 增加税收", "C. 维持就业", "D. 扩大生产"],
+                answer: "BCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第446题
+            {
+                id: 446,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 文化是一个国家、一个民族的灵魂。关于加强文化建设，下列做法中正确的有 ()",
+                options: ["A. 以科学的理论武装人", "B. 以正确的舆论引导人", "C. 以优秀的作品鼓舞人", "D. 以高尚的精神塑造人"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第447题
+            {
+                id: 447,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 我国的基本经济制度、经济发展阶段、科技发展水平、市场竞争程度等内生性地确定了国有经济在我国国民经济中的定位和角色。国有经济对于发挥社会主义制度的优越性，增强我国的 ()，具有关键性作用",
+                options: ["A. 计划管理", "B. 国防实力", "C. 经济实力", "D. 民族凝聚力"],
+                answer: "BCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第448题
+            {
+                id: 448,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 我国改革发展关键阶段的社会条件包括 ()",
+                options: ["A. 利益格局深刻调整", "B. 社会结构深刻变动", "C. 经济体制深刻变革", "D. 思想观念深刻变化"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第449题
+            {
+                id: 449,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 我国在对个体农业进行社会主义改造的过程中，成功地开辟了一条适合我国情况的农业社会主义改造道路，其内容主要有 ()",
+                options: ["A. 在有条件的地区推广农业生产责任制", "B. 遵循自愿互利、典型示范、国家帮助的原则", "C. 坚持积极领导、稳步前进的方针，采取循序渐进的步骤", "D. 积极引导农民组织起来，走互助合作道路"],
+                answer: "BCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第450题
+            {
+                id: 450,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 我国正处于社会主义初级阶段的科学论断，使我们党对社会主义建设的 () 有了更加清醒的认识",
+                options: ["A. 长期性", "B. 艰巨性", "C. 复杂性", "D. 简单性"],
+                answer: "ABC",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第451题
+            {
+                id: 451,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 我们党坚持把马克思主义作为根本指导思想，不断深化对共产党执政规律的认识，毛泽东在探索社会主义建设道路的过程中，就执政党建设问题提出了一系列独创性的思想，具体包括 ()",
+                options: ["A. 必须坚持理论联系实际、密切联系群众、批评和自我批评", "B. 必须坚持民主集中制的组织原则", "C. 党必须坚持马克思主义的指导并使马克思主义中国化时代化", "D. 必须正确处理党际关系"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第452题
+            {
+                id: 452,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 我们党在任何情况下都要牢牢把握社会主义初级阶段这个最大国情，推进任何方面的改革发展都要牢牢立足社会主义初级阶段这个最大实际。社会主义初级阶段的科学含义是 ()",
+                options: ["A. 初级阶段的社会主义即高级的新民主主义社会", "B. 我国的社会主义社会还处在初级阶段", "C. 初级阶段的社会主义是过渡时期的社会", "D. 我国社会已经是社会主义社会"],
+                answer: "BD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第453题
+            {
+                id: 453,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 我们想事情，做工作，想得对不对，做得好不好，根本的衡量尺度，就是 ()",
+                options: ["A. 人民赞成不赞成", "B. 人民拥护不拥护", "C. 人民答应不答应", "D. 人民高兴不高兴"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第454题
+            {
+                id: 454,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 无产阶级领袖所代表的是历史上最革命、最先进的阶级，在革命和建设中发挥了重大作用。毛泽东为 ()，建立了不可磨灭的功勋，为世界被压迫民族的解放和人类进步事业作出了重大贡献",
+                options: ["A. 中国各族人民解放事业的胜利", "B. 中国人民解放军的创立和发展", "C. 中国共产党的创立和发展", "D. 中华人民共和国的缔造和社会主义事业的发展"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第455题
+            {
+                id: 455,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 无产阶级是中国在成为半殖民地半封建社会过程中出现的一个新的社会阶级，主要是铁路、造船以及 () 等产业的工人",
+                options: ["A. 矿山", "B. 海运", "C. 金融", "D. 纺织"],
+                answer: "ABD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第456题
+            {
+                id: 456,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 物质生产活动及生产方式的变化发展决定整个社会历史的变化发展，决定社会形态从低级向高级的更替和发展。对于仍然存在的不适应先进生产力和时代发展要求的一些落后的生产方式，应采取的做法是 ()",
+                options: ["A. 深入推进 “五个一批” 工程", "B. 通过长期努力，逐步使它们向先进适用的生产方式转变", "C. 不能脱离实际地简单化地加以排斥", "D. 立足实际，创造条件加以改造、改进和提高"],
+                answer: "BCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第457题
+            {
+                id: 457,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 习近平指出：“思想政治理论课能否在立德树人中发挥应有作用，关键看重视不重视、适应不适应、做得好不好。” 学好 “毛泽东思想和中国特色社会主义理论体系概论” 课程，就要把 () 有机统一起来，自觉投身于中国特色社会主义伟大实践，为实现中华民族伟大复兴作出应有的贡献",
+                options: ["A. 理论与实践", "B. 主观与客观", "C. 知与行", "D. 理想与现实"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第458题
+            {
+                id: 458,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 习近平总书记指出：\"统筹兼顾是中国共产党的一个科学方法论。它的哲学内涵就是马克思主义辩证法。\" 坚持统筹兼顾，就要正确处理 ()，善于从各方利益的结合点上考虑问题、谋划工作",
+                options: ["A. 当前利益和长远利益的关系", "B. 局部利益和整体利益的关系", "C. 个人利益和集体利益的关系", "D. 最广大人民的根本利益、现阶段群众的共同利益和不同群体的特殊利益的关系"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第459题
+            {
+                id: 459,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 习近平总书记指出：“统筹兼顾是中国共产党的一个科学方法论。它的哲学内涵就是马克思主义辩证法。” 坚持统筹兼顾，就要正确处理 ()，善于从各方利益的结合点上考虑问题、谋划工作",
+                options: ["A. 当前利益和长远利益的关系", "B. 局部利益和整体利益的关系", "C. 个人利益和集体利益的关系", "D. 最广大人民的根本利益、现阶段群众的共同利益和不同群体的特殊利益的关系"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第460题
+            {
+                id: 460,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 习近平总书记指出：“综合国力竞争归根到底是人才竞争。哪个国家拥有人才上的优势，哪个国家最后就会拥有实力上的优势。” 关于为改革开放和现代化建设提供强大的人才保证，应采取的做法是 ()",
+                options: ["A. 开创人才辈出并能充分发挥各种人才积极性和创造性的新局面", "B. 营造尊重人才的社会环境", "C. 形成人才脱颖而出、人尽其才的良好机制", "D. 做好 “两不愁三保障” 工作"],
+                answer: "ABC",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第461题
+            {
+                id: 461,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 下列各种革命方式，不能指引近代中国完成反帝反封建的革命任务、不能为中国找到真正的出路的包括 ()",
+                options: ["A. 不触动封建根基的自强运动和改良主义", "B. 资产阶级革命派领导的民主革命", "C. 照搬西方资本主义的方案", "D. 旧式的农民战争"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第462题
+            {
+                id: 462,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 协调是持续健康发展的内在要求，进入新世纪以后，党中央提出要 ()，从而推动形成了区域发展总体战略",
+                options: ["A. 振兴东北地区等老工业基地", "B. 促进中部地区崛起", "C. 鼓励东部地区率先发展", "D. 实施西部大开发"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第463题
+            {
+                id: 463,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 新民主主义革命就是 “新式的特殊的资产阶级民主主义革命”。与旧民主主义革命相比，它的新的内容和特点集中表现在 ()",
+                options: ["A. 它是世界无产阶级社会主义革命的一部分，即属于世界无产阶级革命性质", "B. 它有了新的前途，即社会主义而不是资本主义", "C. 它有新的指导思想，即马克思列宁主义", "D. 它有新的领导力量，即中国无产阶级及其先锋队 -- 中国共产党"],
+                answer: "BCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第464题
+            {
+                id: 464,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 新民主主义革命理论是指导中国革命取得胜利的指导思想，具有伟大的意义，主要有 ()",
+                options: ["A. 揭示了近代中国革命发展的客观规律，解决了在落后的半殖民地半封建的东方大国进行革命的一系列理论问题", "B. 科学地回答了近代中国革命向何处去的问题", "C. 正确地解决了中国革命的发展阶段问题", "D. 指导党团结带领人民找到了一条正确革命道路"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第465题
+            {
+                id: 465,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 新民主主义革命理论形成的客观条件有 ()",
+                options: ["A. 世界形势的新变化", "B. 旧民主主义革命的失败", "C. 近代中国革命形势的发展", "D. 社会主义改造的完成"],
+                answer: "ABC",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第466题
+            {
+                id: 466,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 新民主主义社会在经济上实行国营经济领导下的合作社经济、个体经济、私人资本主义经济和国家资本主义经济五种经济成分并存的经济制度，在五种经济成分中，属于过渡形式的经济成分是 ()",
+                options: ["A. 合作社经济", "B. 资本主义经济", "C. 国家资本主义经济", "D. 个体经济"],
+                answer: "AC",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第467题
+            {
+                id: 467,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 新民主主义时期三种不同性质的经济成分及与之相联系的三种基本的阶级力量之间的矛盾，集中表现为 ()",
+                options: ["A. 人民对于建立先进的工业国的要求同落后的农业国的现实之间的矛盾", "B. 资产阶级和工人阶级两个阶级的矛盾", "C. 人民对于经济文化迅速发展的需要同经济文化不能满足人民需要的状况之间的矛盾", "D. 资本主义和社会主义两条道路的矛盾"],
+                answer: "BD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第468题
+            {
+                id: 468,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 新时代坚持和发展中国特色社会主义，根本动力仍然是全面深化改革开放。判断改革和各方面工作的是非得失，归根到底，主要看 ()",
+                options: ["A. 改革是否进行得完全、彻底", "B. 是否有利于增强社会主义国家的综合国力", "C. 是否有利于提高人民的生活水平", "D. 是否有利于发展社会主义社会的生产力"],
+                answer: "BCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第469题
+            {
+                id: 469,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 新世纪新阶段，我国的 () 发生深刻变化，社会建设和管理面临诸多新课题",
+                options: ["A. 社会组织形式", "B. 社会结构", "C. 社会主要矛盾", "D. 社会利益格局"],
+                answer: "ABD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第470题
+            {
+                id: 470,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 新世纪新阶段，我国进入 ()，经济社会发展呈现一系列新的阶段性特征",
+                options: ["A. 转型阵痛期", "B. 矛盾凸显期", "C. 改革攻坚期", "D. 发展关键期"],
+                answer: "BCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第471题
+            {
+                id: 471,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 新形势下，党面临的 () 危险更加尖锐地摆在全党面前",
+                options: ["A. 消极腐败", "B. 精神懈怠", "C. 脱离群众", "D. 能力不足"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第472题
+            {
+                id: 472,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 新中国成立初期，中国处于新民主主义社会。新民主主义社会有五种经济成分，其中主要的经济成分有 ()",
+                options: ["A. 资本主义经济", "B. 社会主义经济", "C. 国家资本主义经济", "D. 个体经济"],
+                answer: "ABD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第473题
+            {
+                id: 473,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 新中国成立的开国大典前，围绕军乐团演奏什么曲目，一度众说纷纭，提议用德国乐曲、苏联乐曲、美国乐曲的意见都有。最终，毛泽东拍板：要听自己的乐曲，走自己的路。走自己的路，也就是独立自主。独立自主是毛泽东思想活的灵魂的三个基本方面的内容之一，是 ()",
+                options: ["A. 党的生命线和根本工作路线", "B. 党从中国实际出发、依靠党和人民力量进行革命、建设、改革的必然结论", "C. 中国共产党、中华人民共和国立党立国的重要原则", "D. 中华民族的优良传统"],
+                answer: "BCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第474题
+            {
+                id: 474,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 新中国成立后，在完成社会主义革命和推进社会主义建设时期，毛泽东同志提出把马克思列宁主义基本原理同中国具体实际进行 “第二次结合”，以毛泽东同志为主要代表的中国共产党人，结合新的实际丰富和发展毛泽东思想，提出关于社会主义建设的一系列重要思想，包括 ()",
+                options: ["A. 严格区分和正确处理敌我矛盾和人民内部矛盾，正确处理我国社会主义建设的十大关系", "B. 在党与民主党派的关系上实行 “长期共存、互相监督” 的方针，在科学文化工作中实行 “百花齐放、百家争鸣” 的方针", "C. 走出一条适合我国国情的工业化道路，尊重价值规律", "D. 社会主义社会是一个很长的历史阶段"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第475题
+            {
+                id: 475,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 要坚定不移地实施人才强国战略，坚持尊重 ()，加快确立人才优先发展战略布局，加快人才发展体制机制改革和政策创新",
+                options: ["A. 知识", "B. 创造", "C. 劳动", "D. 人才"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第476题
+            {
+                id: 476,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 以人为本集中体现了马克思主义历史唯物论的基本原理，体现了我们党全心全意为人民服务的根本宗旨和推动经济社会发展的根本目的。以人为本 ()",
+                options: ["A.“本” 是出发点和落脚点", "B. 是科学发展观的核心立场", "C. 是以最广大人民的根本利益为本", "D. 是党执政的理论之基"],
+                answer: "ABC",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第477题
+            {
+                id: 477,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 以什么样的思路来谋划和推进中国社会主义民主政治建设，在国家政治生活中具有管根本、管全局、管长远的作用。建设社会主义政治文明，发展社会主义民主政治，就要巩固和发展 () 的政治局面",
+                options: ["A. 两权制衡", "B. 生动活泼", "C. 安定和谐", "D. 民主团结"],
+                answer: "BCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第478题
+            {
+                id: 478,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 用人标准与用人导向紧密相连，是干部工作的首要问题。坚持正确的用人导向，就要按照 () 方针，建设一支能够担当重任、经得起风浪考验的高素质的领导干部队伍，是党和国家长治久安的根本大计",
+                options: ["A. 专业化", "B. 知识化", "C. 革命化", "D. 年轻化"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第479题
+            {
+                id: 479,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 由于单纯追求经济增长，或者照搬别国发展模式，一些国家的发展出现了问题，其具体表现包括 ()",
+                options: ["A. 社会腐败", "B. 两极分化", "C. 政治动荡", "D. 失业增加"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第480题
+            {
+                id: 480,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 与新民主主义时期三种主要的经济成分相联系，新民主主义社会的阶级构成主要表现为三种基本的阶级力量，它们是 ()",
+                options: ["A. 工人阶级", "B. 大资产阶级", "C. 农民阶级和其他小资产阶级", "D. 民族资产阶级"],
+                answer: "ACD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第481题
+            {
+                id: 481,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 在不断吸收人类历史上一切优秀文化成果中丰富自己，在应对时代新课题、发展新挑战中完善自己，马克思主义从来不会结束真理，而是不断开辟通向真理的道路。以习近平同志为核心的党中央，科学回答 () 等重大时代课题，为全面建设社会主义现代化国家、实现中华民族伟大复兴中国梦提供了行动指南",
+                options: ["A. 建设什么样的长期执政的马克思主义政党、怎样建设长期执政的马克思主义政党", "B. 新时代坚持和发展什么样的中国特色社会主义、怎样坚持和发展中国特色社会主义", "C. 建设什么样的社会主义现代化强国、怎样建设社会主义现代化强国", "D. 一个脱胎于半殖民地半封建的东方大国如何进行社会主义革命"],
+                answer: "ABC",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第482题
+            {
+                id: 482,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 在党的幼年时期，党制定民主革命纲领，发动 ()，推进并帮助国民党改组和国民革命军建立，领导全国反帝反封建伟大斗争，掀起大革命高潮",
+                options: ["A. 青年运动", "B. 工人运动", "C. 议会斗争", "D. 农民运动"],
+                answer: "ABD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第483题
+            {
+                id: 483,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 在进行社会主义改造、向社会主义过渡的进程中，中国共产党积累了丰富的历史经验，包括坚持社会主义工业化建设与社会主义改造同时并举，采取积极引导、逐步过渡的方式及用和平方法进行改造。在以下逐步过渡的方式中，在性质上属于半社会主义性质的形式是 ()",
+                options: ["A. 全行业的公私合营", "B. 个别企业的公私合营", "C. 农业初级社", "D. 手工业供销合作社"],
+                answer: "BCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第484题
+            {
+                id: 484,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 在南方谈话中，邓小平明确提出：\"计划经济不等于社会主义，资本主义也有计划；市场经济不等于资本主义，社会主义也有市场。\" 邓小平这一重要论断蕴含着的社会主义市场经济理论的要点有 ()",
+                options: ["A. 计划和市场都是经济手段", "B. 市场经济作为资源配置的一种方式本身不具有制度属性", "C. 市场经济可以和不同的社会制度结合从而表现出不同的性质", "D. 计划和市场都属于社会基本制度的范畴"],
+                answer: "ABC",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第485题
+            {
+                id: 485,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 在南方谈话中，邓小平明确提出：“计划经济不等于社会主义，资本主义也有计划；市场经济不等于资本主义，社会主义也有市场。” 邓小平这一重要论断蕴含着的社会主义市场经济理论的要点有 ()",
+                options: ["A. 计划和市场都属于社会基本制度的范畴", "B. 市场经济可以和不同的社会制度结合从而表现出不同的性质", "C. 市场经济作为资源配置的一种方式本身不具有制度属性", "D. 计划和市场都是经济手段"],
+                answer: "BCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第486题
+            {
+                id: 486,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 在社会主义初步探索的过程中，我国建立起独立的比较完整的工业体系和国民经济体系，其具体表现包括 ()",
+                options: ["A. 从根本上解决了工业化 “从无到有” 的问题", "B. 教育、科学、文化、卫生、体育事业有很大发展", "C. 经济保持了较快的发展速度", "D. 农业生产条件显著改变"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第487题
+            {
+                id: 487,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 在社会主义改造过程中，中国共产党创造了一系列适合中国特点的由初级到高级逐步过渡的形式，使个体农民、手工业者和私营工商业者能够循序渐进地改变旧的生产方式。我国对资本主义工商业的改造采取赎买的方针，所谓赎买就是 ()",
+                options: ["A. 彻底解决国内民族资产阶级和工人阶级的对抗性矛盾的方式", "B. 将资本主义私有制改变为半社会主义性质的集体所有制", "C. 国家有偿地将私营企业改变为国营企业", "D. 让资本家在一定年限内从企业经营所得中获取一部分利润"],
+                answer: "CD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第488题
+            {
+                id: 488,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 在社会主义改造时期，毛泽东提出 \"严重的问题是教育农民\"，这是因为 ()",
+                options: ["A. 对农民只能引导、说服和教育", "B. 对农民不能采取剥夺的方法", "C. 对农民要使其自愿地走合作化道路", "D. 农民既是私有者又是劳动者"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第489题
+            {
+                id: 489,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 在社会主义改造时期，毛泽东提出 “严重的问题是教育农民”，这是因为 ()",
+                options: ["A. 对农民要使其自愿地走合作化道路", "B. 对农民只能引导、说服和教育", "C. 农民既是私有者又是劳动者", "D. 对农民不能采取剥夺的方法"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第490题
+            {
+                id: 490,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 在习近平新时代中国特色社会主义思想指导下，中国共产党领导全国各族人民，统揽 ()，推动中国特色社会主义进入新时代，实现第一个百年奋斗目标，开启了实现第二个百年奋斗目标新征程",
+                options: ["A. 伟大事业", "B. 伟大梦想", "C. 伟大斗争", "D. 伟大工程"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第491题
+            {
+                id: 491,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 正确处理物质利益、分配方面的人民内部矛盾，就要实行 () 的方针，兼顾国家、集体和个人三方面的利益",
+                options: ["A. 平均分配", "B. 适当安排", "C. 统筹兼顾", "D. 共建共享"],
+                answer: "BC",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第492题
+            {
+                id: 492,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 政治工作是我军的看家本领，是我军的最大特色、最大优势，是我军同一切其他性质军队的最大区别。人民军队政治工作的基本原则包括 ()",
+                options: ["A. 坚持大联合", "B. 优待俘虏", "C. 官兵一致", "D. 军民一致"],
+                answer: "BCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第493题
+            {
+                id: 493,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 中国革命走农村包围城市、武装夺取政权的道路，必须处理好土地革命、武装斗争、农村革命根据地建设三者之间的关系。以下内容正确的有 ()",
+                options: ["A. 土地革命是中国革命的基本内容", "B. 武装斗争是中国革命的主要形式", "C. 统一战线是进行武装斗争和开展土地革命的结果", "D. 农村革命根据地是中国革命的战略阵地"],
+                answer: "ABD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第494题
+            {
+                id: 494,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 中国共产党必须始终代表中国先进生产力的发展要求，代表中国先进文化的前进方向，代表中国最广大人民的根本利益。这是我们党的 ()",
+                options: ["A. 执政之基", "B. 力量之源", "C. 改革之重", "D. 立党之本"],
+                answer: "ABD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第495题
+            {
+                id: 495,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 中国共产党要领导革命取得胜利，必须不断加强党的思想建设、组织建设和作风建设。新民主主义革命时期党的建设的主要经验是 ()",
+                options: ["A. 必须把思想建设始终放在党的建设的首位，以无产阶级思想克服和改造各种非无产阶级思想", "B. 必须加强党的组织建设和作风建设", "C. 必须联系党的政治路线加强党的建设", "D. 必须科学回答建设什么样的长期执政的马克思主义政党"],
+                answer: "ABC",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第496题
+            {
+                id: 496,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 中国共产党在抗日民族统一战线中的策略总方针是 ()",
+                options: ["A. 孤立顽固势力", "B. 打击反对势力", "C. 争取中间势力", "D. 发展进步势力"],
+                answer: "ACD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第497题
+            {
+                id: 497,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 中国共产党在领导人民革命的过程中，积累了丰富的经验，锻造出了有效的克敌制胜的武器。毛泽东在《〈共产党人〉发刊词》一文中，把这些基本经验称为 “中国共产党在中国革命中战胜敌人的三个法宝，三个主要法宝”。三大法宝是指 ()",
+                options: ["A. 党的建设", "B. 统一战线", "C. 实事求是", "D. 武装斗争"],
+                answer: "ABD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第498题
+            {
+                id: 498,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 中国共产党在领导人民革命的过程中，积累了丰富的经验，锻造出了有效的克敌制胜的武器。毛泽东在《共产党人》发刊词》一文中，把这些基本经验称为 \"中国共产党在中国革命中战胜敌人的三个法宝，三个主要法宝\"。三大法宝是指 ()",
+                options: ["A. 武装斗争", "B. 实事求是", "C. 统一战线", "D. 党的建设"],
+                answer: "ACD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第499题
+            {
+                id: 499,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 中国社会主义先进文化是运用马克思主义为指导进行的文化创新，发展先进文化，就要大力倡导一切有利于发扬 () 的思想和精神",
+                options: ["A. 集体主义", "B. 人本主义", "C. 爱国主义", "D. 社会主义"],
+                answer: "ACD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第500题
+            {
+                id: 500,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 中国特色社会主义进入新时代，意味着中国特色社会主义 () 不断发展，拓展了发展中国家走向现代化的途径，为解决人类问题贡献了中国智慧和中国方案",
+                options: ["A. 道路", "B. 制度", "C. 理论", "D. 文化"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第501题
+            {
+                id: 501,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 中国特色社会主义理论体系，是我们党在 () 的基础上形成并不断发展的",
+                options: ["A. 深刻把握人类社会发展规律", "B. 深刻洞察国际形势变化", "C. 科学判断时代主题和时代特征", "D. 深刻洞察世界发展趋势"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第502题
+            {
+                id: 502,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 中国特色社会主义理论体系是马克思主义中国化时代化的重大理论成果。它以全新的视野进一步深化和丰富了对共产党执政规律、社会主义建设规律、人类社会发展规律的认识，是内涵丰富、思想深刻、系统完整的科学理论体系。作为中国特色社会主义理论体系在新时代的新篇章，习近平新时代中国特色社会主义思想，科学回答的新时代的重大时代课题是 ()",
+                options: ["A. 建设什么样的长期执政的马克思主义政党、怎样建设长期执政的马克思主义政党", "B. 坚持和发展什么样的中国特色社会主义、怎样坚持和发展中国特色社会主义", "C. 建设什么样的社会主义现代化强国、怎样建设社会主义现代化强国", "D. 如何建设社会主义、如何巩固和发展社会主义"],
+                answer: "ABC",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第503题
+            {
+                id: 503,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 中国特色社会主义理论体系是中国共产党长期探索的伟大理论创造，开辟了马克思主义中国化时代化新境界。中国特色社会主义理论体系，是 ()",
+                options: ["A. 我们党最可宝贵的政治和精神财富", "B. 全党全国各族人民团结奋斗的共同思想基础", "C. 战胜来自政治、经济、社会和自然界等一切风险和挑战的精神支柱", "D. 全面推进中华民族伟大复兴的根本指针"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第504题
+            {
+                id: 504,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 抓紧解决我国发展面临的突出矛盾和问题，就要促进经济增长向主要依靠 () 转变，不断提高发展的全面性、协调性、可持续性",
+                options: ["A. 科技进步", "B. 中外合作", "C. 管理创新", "D. 劳动者素质提高"],
+                answer: "ACD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+            // 第505题
+            {
+                id: 505,
+                type: "多选题（2分）",
+                question: "(多选题，2 分) 做好区域协调发展一盘棋这篇大文章，不能简单要求各地区在经济发展上达到同一水平，而是要根据各地区的条件，走合理分工、优化发展的路子。党的十六大以后，我国促进区域协调发展的具体举措包括 ()",
+                options: ["A. 促进中部地区崛起", "B. 深入推进西部大开发", "C. 支持东部地区率先发展", "D. 振兴东北地区等老工业基地"],
+                answer: "ABCD",
+                correctCount: 0,
+                wrongCount: 0,
+                status: "未做",
+                isRedo: false
+            },
+        ];
+
+        let currentIndex = 0;
+        let isRedoStage = false;
+        let questions = [];
+
+        // --------------------------
+        // 关键优化1：初始化时自动适配你的题库格式
+        // --------------------------
+        function init() {
+            const savedData = localStorage.getItem('maoGaiPracticeData');
+            
+            if (savedData) {
+                try {
+                    questions = JSON.parse(savedData);
+                    console.log('已加载保存的答题记录');
+                } catch (e) {
+                    console.error('加载保存的数据失败，使用初始数据', e);
+                    questions = [...fullQuestionBank];
+                }
+            } else {
+                questions = [...fullQuestionBank];
+            }
+
+            // 自动为所有题目添加"halfCorrectCount"字段（你的题库中没有，避免报错）
+            questions.forEach(question => {
+                if (question.halfCorrectCount === undefined) {
+                    question.halfCorrectCount = 0;
+                }
+            });
+            
+            // 找到最后一个未完成的题目（含半对/做错/不确定）
+            const lastUnfinished = questions.findIndex(q => 
+                q.status!== '做对' || q.wrongCount > 0 || q.halfCorrectCount > 0
+            );
+            
+            currentIndex = lastUnfinished > -1? lastUnfinished : 0;
+            displayQuestion();
+        }
+
+        // 保存数据到本地存储（不改变你的题库原始格式）
+        function saveData() {
+            try {
+                localStorage.setItem('maoGaiPracticeData', JSON.stringify(questions));
+            } catch (e) {
+                console.error('保存数据失败', e);
+            }
+        }
+
+        // 重置所有答题记录
+        function resetAllData() {
+            if (confirm('确定要重置所有答题记录吗？这将清除所有进度！')) {
+                localStorage.removeItem('maoGaiPracticeData');
+                // 重置后仍保持你的题库格式
+                questions = [...fullQuestionBank].map(q => ({
+                    ...q,
+                    halfCorrectCount: 0 // 自动补全字段
+                }));
+                currentIndex = 0;
+                isRedoStage = false;
+                document.getElementById('stage-bar').textContent = '刷题阶段：首轮练习（按顺序完成所有题目）';
+                displayQuestion();
+                alert('所有记录已重置');
+            }
+        }
+
+        // --------------------------
+        // 关键优化2：答案格式转换工具（字符串→数组，用于判断逻辑）
+        // --------------------------
+        // 把你的字符串答案（如"ABCD"）转为数组["A","B","C","D"]，方便后续计算
+        function getAnswerArray(answerStr) {
+            return answerStr.split(''); // 拆分字符串为单个字符数组
+        }
+
+        // 显示题目（多选逻辑：点击切换选中状态）
+        function displayQuestion() {
+            const question = questions[currentIndex];
+            if (!question) {
+                document.getElementById('finish-tip').style.display = 'block';
+                return;
+            }
+
+            // 显示题目类型和内容
+            document.getElementById('q-type').textContent = question.type;
+            document.getElementById('q-content').textContent = question.question;
+
+            // 显示选项（多选：点击切换选中/未选中）
+            const optionsDiv = document.getElementById('q-options');
+            optionsDiv.innerHTML = '';
+            question.options.forEach(option => {
+                const span = document.createElement('span');
+                span.textContent = option;
+                span.dataset.option = option[0]; // 存储选项字母(A/B/C/D)
+                // 多选逻辑：点击切换选中状态
+                span.onclick = function () {
+                    this.classList.toggle('selected');
+                };
+                optionsDiv.appendChild(span);
+            });
+
+            // 重置结果显示
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('answer-explanation').classList.remove('visible');
+
+            updateStatusBar();
+        }
+
+        // 状态栏更新（新增半对次数显示）
+        function updateStatusBar() {
+            const question = questions[currentIndex];
+            const totalQuestions = questions.length;
+            // 进度计算：已做对的题目数（排除半对/做错）
+            const completedCount = questions.filter(q => q.status === '做对').length;
+            const progressText = `${completedCount + 1}/${totalQuestions}`;
+            
+            // 更新状态栏数据
+            document.getElementById('progress').textContent = progressText;
+            document.getElementById('q-status').textContent = question.status;
+            document.getElementById('correct-count').textContent = question.correctCount;
+            document.getElementById('half-correct-count').textContent = question.halfCorrectCount; // 显示半对次数
+            document.getElementById('wrong-count').textContent = question.wrongCount;
+            
+            // 待重练题数：半对/做错/不确定的题目
+            const redoCount = questions.filter(q => 
+                q.status === '做错' || q.status === '不确定' || q.halfCorrectCount > 0
+            ).length;
+            document.getElementById('redo-count').textContent = redoCount;
+        }
+
+        // --------------------------
+        // 关键优化3：提交答案逻辑（适配字符串答案，实现三种结果）
+        // --------------------------
+        function submitAnswer() {
+            // 收集用户选中的选项（多选）
+            const selectedSpans = document.querySelectorAll('.options span.selected');
+            if (selectedSpans.length === 0) {
+                alert('请选择至少一个选项');
+                return;
+            }
+            // 提取用户选中的选项字母（如 ["A","B"]）
+            const userAnswer = Array.from(selectedSpans).map(span => span.dataset.option);
+            const question = questions[currentIndex];
+            const resultDiv = document.getElementById('result');
+            const allOptions = document.querySelectorAll('.options span');
+            
+            // 核心：将你的字符串答案转为数组（如"ABCD"→["A","B","C","D"]）
+            const correctAnswer = getAnswerArray(question.answer);
+
+            // --------------------------
+            // 三种结果的判断逻辑
+            // --------------------------
+            // 工具函数1：判断用户答案与正确答案是否完全一致（排序后比较）
+            const isFullCorrect = () => {
+                const sortedUser = [...userAnswer].sort().join('');
+                const sortedCorrect = [...correctAnswer].sort().join('');
+                return sortedUser === sortedCorrect;
+            };
+
+            // 工具函数2：计算用户选对的选项（交集）
+            const getCorrectSelected = () => {
+                return userAnswer.filter(option => correctAnswer.includes(option));
+            };
+
+            // 工具函数3：计算用户选错的选项（用户选了但不在正确答案中）
+            const getWrongSelected = () => {
+                return userAnswer.filter(option =>!correctAnswer.includes(option));
+            };
+
+            const correctSelected = getCorrectSelected(); // 选对的选项
+            const wrongSelected = getWrongSelected();     // 选错的选项
+            let resultType = ''; // 结果类型：correct/half-correct/wrong
+
+            // 1. 全对：用户答案与正确答案完全一致，且无错误选项
+            if (isFullCorrect() && wrongSelected.length === 0) {
+                resultType = 'correct';
+                question.status = '做对';
+                question.correctCount++;
+                resultDiv.innerHTML = '<i class="fas fa-check-circle"></i> 回答全对！得2分';
+            }
+            // 2. 半对：用户选对部分选项，且无错误选项（没选错，只是漏选）
+            else if (correctSelected.length > 0 && wrongSelected.length === 0) {
+                resultType = 'half-correct';
+                question.status = '半对';
+                question.halfCorrectCount++;
+                resultDiv.innerHTML = `<i class="fas fa-half-stroke"></i> 回答半对！选对${correctSelected.length}/${correctAnswer.length}个正确选项，得1分`;
+            }
+            // 3. 错误：①没选对任何选项 ②选了错误选项（即使有部分正确）
+            else {
+                resultType = 'wrong';
+                question.status = '做错';
+                question.wrongCount++;
+                resultDiv.innerHTML = `<i class="fas fa-times-circle"></i> 回答错误！${wrongSelected.length > 0? '包含错误选项' : '未选任何正确选项'}`;
+            }
+
+            // --------------------------
+            // 界面反馈：高亮正确/错误选项
+            // --------------------------
+            allOptions.forEach(span => {
+                const option = span.dataset.option;
+                // 高亮正确答案（从你的字符串答案中拆分的所有选项）
+                if (correctAnswer.includes(option)) {
+                    span.classList.add('correct-answer');
+                }
+                // 高亮用户选错的选项
+                if (wrongSelected.includes(option)) {
+                    span.classList.add('wrong-option');
+                }
+                // 提交后禁用选项，防止重复选择
+                span.style.pointerEvents = 'none';
+            });
+
+            // 显示结果和解析（正确答案格式优化："ABCD"→"A、B、C、D"）
+            resultDiv.className = `result ${resultType}`;
+            resultDiv.style.display = 'flex';
+            document.getElementById('correct-answer-text').textContent = correctAnswer.join('、'); // 优化显示格式
+            document.getElementById('explanation-text').textContent = question.explanation || '暂无解析';
+            document.getElementById('answer-explanation').classList.add('visible');
+
+            // 保存数据并自动进入下一题
+            saveData();
+            setTimeout(() => {
+                goToNextQuestion();
+            }, 3000);
+        }
+
+        // 标记不确定（适配你的答案格式）
+        function markUnsure() {
+            const question = questions[currentIndex];
+            question.status = '不确定';
+            question.wrongCount++; // 不确定按需重练处理
+            
+            const resultDiv = document.getElementById('result');
+            const allOptions = document.querySelectorAll('.options span');
+            const correctAnswer = getAnswerArray(question.answer); // 转换为数组
+
+            // 高亮所有正确答案
+            allOptions.forEach(span => {
+                if (correctAnswer.includes(span.dataset.option)) {
+                    span.classList.add('correct-answer');
+                }
+                span.style.pointerEvents = 'none';
+            });
+
+            // 显示结果
+            resultDiv.className = 'result half-correct';
+            resultDiv.innerHTML = `<i class="fas fa-question-circle"></i> 已标记为不确定，正确答案：${correctAnswer.join('、')}`;
+            resultDiv.style.display = 'flex';
+
+            // 显示解析
+            document.getElementById('correct-answer-text').textContent = correctAnswer.join('、');
+            document.getElementById('explanation-text').textContent = question.explanation || '暂无解析';
+            document.getElementById('answer-explanation').classList.add('visible');
+
+            saveData();
+            setTimeout(() => {
+                goToNextQuestion();
+            }, 3000);
+        }
+
+        // 查看答案（适配你的答案格式）
+        function showAnswer() {
+            const question = questions[currentIndex];
+            question.status = '做错';
+            question.wrongCount++;
+            
+            const resultDiv = document.getElementById('result');
+            const allOptions = document.querySelectorAll('.options span');
+            const correctAnswer = getAnswerArray(question.answer); // 转换为数组
+
+            // 高亮所有正确答案
+            allOptions.forEach(span => {
+                if (correctAnswer.includes(span.dataset.option)) {
+                    span.classList.add('correct-answer');
+                }
+                span.style.pointerEvents = 'none';
+            });
+
+            // 显示结果
+            resultDiv.className = 'result wrong';
+            resultDiv.innerHTML = `<i class="fas fa-info-circle"></i> 正确答案：${correctAnswer.join('、')}`;
+            resultDiv.style.display = 'flex';
+
+            // 显示解析
+            document.getElementById('correct-answer-text').textContent = correctAnswer.join('、');
+            document.getElementById('explanation-text').textContent = question.explanation || '暂无解析';
+            document.getElementById('answer-explanation').classList.add('visible');
+
+            saveData();
+            setTimeout(() => {
+                goToNextQuestion();
+            }, 3000);
+        }
+
+        // 下一题逻辑（适配半对状态）
+        function goToNextQuestion() {
+            let nextIndex = -1;
+            
+            // 先在当前索引后查找未完成的题目（半对/做错/不确定）
+            for (let i = currentIndex + 1; i < questions.length; i++) {
+                const q = questions[i];
+                if (q.status!== '做对' || q.halfCorrectCount > 0 || q.wrongCount > 0) {
+                    nextIndex = i;
+                    break;
+                }
+            }
+            
+            // 如果后面没有，从头开始查找
+            if (nextIndex === -1) {
+                for (let i = 0; i <= currentIndex; i++) {
+                    const q = questions[i];
+                    if (q.status!== '做对' || q.halfCorrectCount > 0 || q.wrongCount > 0) {
+                        nextIndex = i;
+                        break;
+                    }
+                }
+            }
+            
+            if (nextIndex!== -1) {
+                currentIndex = nextIndex;
+                displayQuestion();
+            } else {
+                // 所有题目都已做对
+                document.getElementById('finish-tip').style.display = 'block';
+            }
+        }
+
+        // 页面加载时初始化
+        window.onload = init;
+    </script>
+</body>
+</html>
